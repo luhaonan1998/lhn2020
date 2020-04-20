@@ -100,7 +100,7 @@ if __name__ == "__main__":
     bpps, psnrs = 0., 0.
     with torch.no_grad():
         for dir in dirs:
-            bpp,psnr = test(args, dir, CONTEXT=False, crop=256)
+            bpp,psnr = test(args, dir, CONTEXT=False, crop=None)
             bpps += bpp
             psnrs += psnr
     print("bpps:%0.4f, psnr:%0.4f"%(bpps/24.0, psnrs/24.0))
