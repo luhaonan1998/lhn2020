@@ -78,7 +78,7 @@ def test(args, im_dir, CONTEXT=False, crop=None):
     out = out.astype('uint8')
     
     #ms-ssim
-#     mssim = mssim_func(im[:,:,:H,:W].cuda(),output_[:,:,:H,:W].cuda())
+    mssim = mssim_func(im[:,:,:H,:W].cuda(),output_[:,:,:H,:W].cuda())
     
     #psnr float
     mse =  torch.mean((im[:,:,:H,:W] - output_[:,:,:H,:W]) * (im[:,:,:H,:W] - output_[:,:,:H,:W]))
