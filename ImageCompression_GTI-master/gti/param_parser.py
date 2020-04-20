@@ -17,6 +17,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """Argument parsers to parse training & evaluation parameters passed as script arguments."""
 
+import os
 import argparse
 from .chip import spec
 
@@ -36,12 +37,6 @@ class BaseParams(argparse.ArgumentParser):
             help="target chip, e.g. 2801, 2803, 5801"
         )
         self.add_argument(
-            "--num_classes",
-            type=int,
-            default=1000,
-            help="number of output classes"
-        )
-        self.add_argument(
             "--image_size",
             type=int,
             default=spec.DEFAULT_IMAGE_SIZE,
@@ -51,8 +46,13 @@ class BaseParams(argparse.ArgumentParser):
         self.add_argument(
             "--checkpoint",
             type=str,
-            default="checkpoints/best/2801_vgg16_step4.pt",
+            default=None,
             help="checkpoint path",
+        )
+        self.add_argument(
+            "--use_cpu",
+            action="store_true",
+            help="use GPU by default"
         )
 
 class QuantizationParams(BaseParams):
@@ -73,16 +73,22 @@ class QuantizationParams(BaseParams):
             action="store_true",
             help="fuse batch norm and ReLU cap into weight and bias to simulate chip operation during training"
         )
+        self.add_argument(
+            "--ten_bit_act",
+            action="store_true",
+            help="whether 10-bit activation is enabled"
+        )
 
 class TrainParser(QuantizationParams):
     def __init__(self):
         super(TrainParser, self).__init__()
+        # Training
         self.add_argument(
-            "--use_gpu",
-            action="store_false",
-            help="use GPU by default"
+            "--num_classes",
+            type=int,
+            default=1000,
+            help="number of output classes"
         )
-        # Training 
         self.add_argument(
             "--train_data_dir",
             type=str,
@@ -127,9 +133,9 @@ class TrainParser(QuantizationParams):
             help="percentile to sample ReLU outputs at"
         )
         self.add_argument(
-            "--cal_relu_batches",
+            "--num_batches",
             type=int,
-            default=10,
+            default=5,
             help="how many batches to sample ReLU outputs for"
         )
 
@@ -171,22 +177,22 @@ class EvalParser(QuantizationParams):
     def __init__(self):
         super(EvalParser, self).__init__()
         self.add_argument(
-            "--use_gpu",
-            action="store_false",
-            help="use GPU by default"
-        )
-        self.add_argument(
             "--data_dir",
             type=str,
             default="data/val",
             help="dataset directory",
         )
         self.add_argument(
-            "--batch_size",
+            "--test_batch_size",
             type=int,
             default=100,
             help="number of images per batch"
         )
+
+    def parse_args(self, *args, **kwargs):
+        args = super(EvalParser, self).parse_args(*args, **kwargs)
+        args.checkpoint = args.checkpoint or os.path.join("checkpoints/best", "_".join([args.chip, args.net, "step4"]) + ".pt")
+        return args
 
 class ConversionParser(BaseParams):
     def __init__(self):
@@ -203,17 +209,22 @@ class ConversionParser(BaseParams):
             help="location of nets directory"
         )
         self.add_argument(
-            "--evaluate_path",
+            "--image_path",
             type=str,
             default=None,
             help="evaluate path for image(s)"
         )
         self.add_argument(
-            "--debug",
-            type=bool,
-            default=False,
-            help="debug mode to keep intermediate files"
+            "--best_checkpoint_dir",
+            type=str,
+            default="checkpoints/best",
+            help="directory of best saved checkpoint(s)"
         )
+
+    def parse_args(self, *args, **kwargs):
+        args = super(ConversionParser, self).parse_args(*args, **kwargs)
+        args.checkpoint = args.checkpoint or os.path.join(args.best_checkpoint_dir, "_".join([args.chip, args.net, "step4"]) + ".pt")
+        return args
 
 class ChipInferParser(BaseParams):
     def __init__(self):
@@ -224,6 +235,19 @@ class ChipInferParser(BaseParams):
             help="whether checkpoint has been trained with 10-bit activation for last chip layer"
         )
         self.add_argument(
+            "--net_dir",
+            type=str,
+            default="nets",
+            help="location of nets directory"
+        )
+        # Checkpoints & weights
+        self.add_argument(
+            "--best_checkpoint_dir",
+            type=str,
+            default="checkpoints/best",
+            help="directory of best saved checkpoint(s)"
+        )
+        self.add_argument(
             "--data_dir",
             type=str,
             default="data/val",
@@ -232,11 +256,12 @@ class ChipInferParser(BaseParams):
         self.add_argument(
             "--chip_model",
             type=str,
-            default="nets/2801_vgg16.model",
-            help="dataset directory for evaluation on chip"
+            default=None,
+            help="location of model file"
         )
-        self.add_argument(
-            "--image_path",
-            type=str,
-            help="image path for inference on chip"
-        )
+
+    def parse_args(self, *args, **kwargs):
+        args = super(ChipInferParser, self).parse_args(*args, **kwargs)
+        args.chip_model = args.chip_model or os.path.join(args.net_dir, "_".join([args.chip, args.net]) + ".model") 
+        args.checkpoint = args.checkpoint or os.path.join(args.best_checkpoint_dir, "_".join([args.chip, args.net, "step4"]) + ".pt")
+        return args
