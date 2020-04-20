@@ -37,7 +37,7 @@ def test(args, im_dir, CONTEXT=True, crop=None):
 
     # model initalization
     image_comp = model.Image_Coder_Context(args)
-    image_comp = torch.load('./checkpoints/ae.pt')
+    image_comp = torch.load('/checkpoints/ae.pt')
     image_comp.eval() 
     if CONTEXT:
         context = torch.load('checkpoints/best/context.pt')   
