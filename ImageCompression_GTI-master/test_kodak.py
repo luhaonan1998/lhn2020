@@ -9,7 +9,7 @@ from modules import model
 
 from gti.param_parser import TrainParser 
 
-def test(args, im_dir, CONTEXT=True, crop=None):
+def test(args, im_dir, CONTEXT=False, crop=None):
 
     TRAINING = False
     GPU = True
