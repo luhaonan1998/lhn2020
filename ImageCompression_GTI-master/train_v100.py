@@ -117,7 +117,7 @@ def train(args):
                 torch.save(
                    image_comp.module, 
                    os.path.join(
-                       "./checkpoints/",
+                       "/checkpoints/",
                        'ae_%d_%d_%.8f_%.8f_%0.8f.pt' \
                             % (epoch, step, rec_loss/cnt, bpp/cnt, lamb * rec_loss/cnt + bpp/cnt)
                    )
