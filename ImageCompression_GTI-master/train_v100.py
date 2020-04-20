@@ -59,7 +59,7 @@ def train(args):
     if LOAD_AE: 
         image_comp = torch.load('./checkpoints/ae.pt')
     image_comp.train()   
-    image_comp = nn.DataParallel(image_comp, device_id=[0]) 
+    image_comp = nn.DataParallel(image_comp, device_ids=[0]) 
     # Adam optimizer
     optimizer = torch.optim.Adam(image_comp.parameters(),lr=lr)
     
